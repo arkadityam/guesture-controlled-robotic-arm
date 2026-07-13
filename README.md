@@ -1,47 +1,49 @@
+# 🦾 Gesture-Controlled Robotic Arm
 
-🦾 Gesture-Controlled Robotic Arm via I2C Communication
-An advanced, dual-module embedded system that translates real-time hand gestures and physical button inputs into precise electromechanical robotic movements. The system utilizes an MPU6050 Inertial Measurement Unit (IMU) to track spatial orientation, processing the data via an Arduino Master unit before transmitting packetized data over an I2C serial bus to an Arduino Slave that drives three dedicated servo systems.
-📌 Features
-• 🔄 I2C Master-Slave Architecture: Efficient inter-board communication utilizing data packet serialization/deserialization.
-• 📐 IMU Gesture Mapping: Uses an MPU6050 accelerometer/gyroscope to dynamically map tilt data (X, Y, Z axes) into 8-bit values (0-255).
-• 🦾 Multi-Axis Servo Kinematics: Implements hardware constraint filtering (constrain()) and linear interpolation (map()) for smooth physical motion.
-• 🔘 End-Effector/Gripper Control: Integrated digital push-button logic to toggle an end-effector servo between holding and resting states.
-• 📊 Telemetry Feedback: Real-time debugging outputs sent over UART to the hardware serial monitor on both control modules.
-🔌 Hardware Architecture & Wiring
-🛰️ Master Module (Glove/Controller)
-• Microcontroller: Arduino (e.g., Uno/Nano)
-• Sensors: MPU6050 (6-axis IMU), 1x Push Button
-• Pin Configuration: • A4 (SDA) ➡️ Connected to Slave SDA & MPU6050 SDA • A5 (SCL) ➡️ Connected to Slave SCL & MPU6050 SCL • Pin 7 ➡️ Push Button (Configured with internal INPUT_PULLUP) • Pin 13 ➡️ Local Status LED
-🎛️ Slave Module (Robotic Arm Assembly)
-• Microcontroller: Arduino (e.g., Uno/Nano)
-• Actuators: 3x PWM Servo Motors
-• Pin Configuration: • Pin 9 ➡️ Z-Axis Base/Rotation Servo • Pin 8 ➡️ Y-Axis Pitch/Elevation Servo • Pin 7 ➡️ Button-Controlled Gripper Servo • Built-in LED ➡️ Telemetry Sync Indicator
-⚠️ Important Note on Wiring: Ensure all sub-systems share a Common Ground (GND). If the servos draw high current, power them using an external 5V/6V DC supply rather than the Arduino's onboard regulator to prevent system brownouts.
-📦 Data Packet Structure
-The two microcontrollers communicate deterministically by passing a structured byte-array packet over the I2C bus (Address: 0x08):
-struct MyData {
-  byte X;           // MPU6050 X-axis mapped data (0-255)
-  byte Y;           // MPU6050 Y-axis mapped data (0-255)
-  byte Z;           // MPU6050 Z-axis mapped data (0-255)
-  byte buttonState; // Digital state: 1 = Pressed (Active), 0 = Released
-};
+A minimalist, dual-module embedded system that translates real-time hand gestures and physical button inputs into robotic movements using **I2C communication**[span_1](start_span)[span_1](end_span).
 
-🛠️ Software Overview
-1. Master Controller Logic
-• Polling cycle reads digital and inertial registers.
-• Maps raw data from the accelerometer bounds (-17000 to +17000) down to a clean 0-255 format to fit perfectly within standard byte parameters.
-• Direct byte-pointer serialization packages the MyData struct and broadcasts it over I2C every 500 ms.
-2. Slave Actuator Logic
-• Operates on an asynchronous interrupt event (Wire.onReceive(receiveEvent)) to prevent blocking the main loop execution.
-• Kinematic Actuation Profiles: • Z-Axis Servo: Constrains input array between 40-245, mapping to physical safe operating limits of 50° to 160°. • Y-Axis Servo: Constrains input array between 30-205, mapping to an inverted sweep of 180° to 0°. • Gripper/Button Servo: Executes a clean step function; holding at 90° when the controller button is pressed and returning to a relaxed resting state at 35°.
-🚀 Getting Started
-Prerequisites
-Ensure you have the following external libraries installed in your Arduino IDE:
-• Wire.h (Built-in I2C protocol library)
-• Servo.h (Built-in PWM Generation library)
-• I2Cdev.h & MPU6050.h (Electronic Row/Jeff Rowberg IMU driver collection)
-Deployment Steps
-1. Flash the Master Code onto your transmitter controller framework.
-2. Flash the Slave Code onto the controller physically tied to the robotic arm assembly.
-3. Open your Serial Monitors at 9600 Baud to verify runtime telemetry pipeline diagnostics.
-Developed with focus on real-time control, precise system integration, and electromechanical systems design. ⚡🦾
+---
+
+## 🎯 System Highlights
+* **I2C Protocol:** Reliable Master-Slave inter-board communication[span_2](start_span)[span_2](end_span).
+* **Gesture Mapping:** Maps raw MPU6050 IMU spatial data directly to servo angles.
+* **Smart Bounds:** Uses software constraints (`constrain()`) to protect servo hardware limits.
+
+---
+
+## 🔌 Hardware Setup
+
+### 🛰️ Master (Glove Controller)
+* **MCU:** Arduino Nano / Uno
+* **Sensors:** MPU6050 IMU & 1x Push Button
+* **Pins:** `A4 (SDA)`, `A5 (SCL)`, `Pin 7 (Button)`
+
+### 🎛️ Slave (Robotic Arm)
+* **MCU:** Arduino Nano / Uno
+* **Actuators:** 3x PWM Servos
+* **Pins:** `Pin 9 (Z-Servo)`, `Pin 8 (Y-Servo)`, `Pin 7 (Gripper)`
+
+> ⚠️ **Pro-Tip:** Connect all **GND** lines together, and use an external 5V/6V power supply for the servos to prevent system resets!
+
+---
+
+## 📊 Data Mapping Profile
+
+Data packets are cleanly serialized into an 8-bit struct (`Address: 0x08`)[span_3](start_span)[span_3](end_span):
+
+| Input Source | Signal Processing Bounds | Physical Output Range | Actuator target |
+| :--- | :--- | :--- | :--- |
+| **MPU6050 Z-Axis** | Mapped $0-255$ $\rightarrow$ Constrained `40 to 245` | **$50^\circ$ to $160^\circ$** | Base Rotation Servo |
+| **MPU6050 Y-Axis** | Mapped $0-255$ $\rightarrow$ Constrained `30 to 205` | **$180^\circ$ to $0^\circ$** | Arm Pitch Servo |
+| **Push Button** | Binary State (`0` or `1`)[span_4](start_span)[span_4](end_span) | **$35^\circ$ (Rest) / $90^\circ$ (Pressed)** | Gripper Servo |
+
+---
+
+## 🚀 Quick Start
+1. Install `Wire.h`, `Servo.h`, and `MPU6050.h` in your Arduino IDE.
+2. Flash the **Master** code to the controller glove.
+3. Flash the **Slave** code to the robotic arm hardware.
+4. Open the Serial Monitor at **9600 Baud** for live tracking diagnostics!
+
+---
+*Built for optimal real-time performance and seamless system integration.* ⚡
